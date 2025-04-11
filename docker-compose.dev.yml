@@ -1,0 +1,33 @@
+services:
+  cloudflareopencv:
+    build:
+      context: .
+    container_name: cloudflareopencv
+    hostname: cloudflareopencv
+    environment:
+      - USER=${CLOUDFLARE_OPENCV_USER:?error}
+      - PASSWORD=${CLOUDFLARE_OPENCV_PASSWORD:?error}
+      - GID=${CLOUDFLARE_OPENCV_GID:?error}
+      - UID=${CLOUDFLARE_OPENCV_UID:?error}
+      - VNC_PASSWORD=${CLOUDFLARE_OPENCV_VNC_PASSWORD:?error}
+      # - DEBUG_OPENCV=1
+    ports:
+      # FastAPI
+      - "6081:8000"
+      # DEBUG Purposes:
+      - "6080:6080" # noVNC HTML5 interface (access via browser)—noVNC Connection endpoint http://<IPv4>:6080/vnc.html
+      - "5900:5900" # raw VNC (optional)
+    volumes:
+      - /dev/shm:/dev/shm # Shared memory
+      - /run/dbus/system_bus_socket:/host/run/dbus/system_bus_socket
+      - ./docker/data:/cloudflareopencv/data # Data Output
+    cap_add:
+      - SYS_PTRACE
+    restart: on-failure
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    driver: bridge
+    external: true

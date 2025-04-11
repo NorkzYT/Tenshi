@@ -1,0 +1,30 @@
+{
+	"name": "cloudflareopencv",
+	"description": "A tool for automating Cloudflare Turnstile challenge bypass via full-browser automation, computer vision-based element detection and cookie extraction.",
+	"version": "1.0.0",
+	"author": "NorkzYT",
+	"private": false,
+	"scripts": {
+		"clean:install": "rm -rf node_modules/ && rm -rf bun.lockb && bun i",
+		"prettier:check": "prettier --check .",
+		"prettier:format": "prettier --write .",
+		"repoTree": "python3 repoTree.py",
+		"preinstall": "husky install"
+	},
+	"husky": {
+		"hooks": {
+			"pre-commit": "echo \"[Husky] pre-commit\"",
+			"commit-msg": "echo \"[Husky] commit-msg\""
+		}
+	},
+	"devDependencies": {
+		"@commitlint/cli": "^19.0.0",
+		"@commitlint/config-conventional": "^19.0.0",
+		"husky": "^9.0.0",
+		"opencommit": "^3.0.4"	
+	},
+	"engines": {
+		"npm": ">=7.10.0",
+		"node": ">=16.0.0"
+	}
+}

@@ -1,0 +1,101 @@
+# Scans, builds and releases a multi-architecture docker image
+name: 🐳 Build + Publish Multi-Platform Image
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["master"]
+    tags: [v*]
+    paths:
+      - "docker/**"
+      - ".github/workflows/docker-build-publish.yml"
+      - "dockerfile"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  packages: write
+
+env:
+  DH_IMAGE: ${{ secrets.DOCKER_REPO }}
+  GH_IMAGE: ${{ github.repository_owner }}/${{ github.event.repository.name }}
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    permissions: { contents: read, packages: write }
+    if: "!contains(github.event.head_commit.message, '[ci-skip]')"
+
+    steps:
+      - name: 🛎️ Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: 🔖 Get App Version
+        uses: tyankatsu0105/read-package-version-actions@v1
+        id: package-version
+
+      - name: 🗂️ Make Docker Meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ env.DH_IMAGE }}
+            ghcr.io/${{ env.GH_IMAGE }}
+          tags: |
+            ${{ steps.package-version.outputs.version }}
+            type=semver,event=tag,pattern={{version}}
+          labels: |
+            maintainer=NorkzYT
+            org.opencontainers.image.title=Backuponepass
+            org.opencontainers.image.description=Automatically backup your 1Password Data.
+            org.opencontainers.image.documentation=https://github.com/NorkzYT/BackupOnePass
+            org.opencontainers.image.authors=Richard Lora
+            org.opencontainers.image.licenses=GPL-3.0
+            org.opencontainers.image.version=${{ steps.package-version.outputs.version }}
+
+      - name: 🔧 Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64
+
+      - name: 🔧 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        id: buildx
+        with:
+          driver-opts: image=moby/buildkit:v0.10.6
+
+      - name: 👀 Inspect builder
+        run: |
+          echo "Name:      ${{ steps.buildx.outputs.name }}"
+          echo "Endpoint:  ${{ steps.buildx.outputs.endpoint }}"
+          echo "Status:    ${{ steps.buildx.outputs.status }}"
+          echo "Flags:     ${{ steps.buildx.outputs.flags }}"
+          echo "Platforms: ${{ steps.buildx.outputs.platforms }}"
+
+      - name: 🔑 Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: 🔑 Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🚦 Check Registry Status
+        uses: crazy-max/ghaction-docker-status@v3
+
+      - name: ⚒️ Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./dockerfile
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          push: true

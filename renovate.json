@@ -1,0 +1,31 @@
+{
+	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
+	"extends": ["config:base", ":dependencyDashboard", ":rebaseStalePrs"],
+	"timezone": "America/New_York",
+	"schedule": ["after 10pm and before 5am every weekday", "every weekend"],
+	"labels": ["dependencies", "renovate"],
+	"baseBranches": ["staging"],
+	"packageRules": [
+		{
+			"matchDatasources": ["docker"],
+			"automerge": true,
+			"autoApprove": true,
+			"automergeType": "branch"
+		},
+		{
+			"matchDepTypes": ["devDependencies"],
+			"matchPackagePatterns": ["lint", "prettier"],
+			"automerge": true,
+			"automergeType": "branch"
+		},
+		{
+			"matchUpdateTypes": ["minor", "patch"],
+			"matchCurrentVersion": "!/^0/",
+			"labels": ["minor", "dependencies", "renovate"],
+			"internalChecksFilter": "strict",
+			"minimumReleaseAge": "3 days",
+			"automerge": true,
+			"automergeType": "branch"
+		}
+	]
+}

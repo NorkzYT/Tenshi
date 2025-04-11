@@ -1,0 +1,6 @@
+numpy==2.2.4
+opencv-python==4.11.0.86
+Pillow==11.1.0
+fastapi==0.115.12
+uvicorn==0.34.0
+browser-cookie3==0.20.1
