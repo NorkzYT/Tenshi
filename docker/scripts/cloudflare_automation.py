@@ -177,29 +177,6 @@ def poll_for_cookies(timeout=60, interval=3):
         time.sleep(interval)
 
 
-def extract_cookies(output_file="/cloudflareopencv/data/cloudflare_cookies.json"):
-    """
-    Poll for cookies from Brave, convert them to serializable dictionaries, and save them to a JSON file.
-    """
-    cookies_list = poll_for_cookies(timeout=60, interval=3)
-    try:
-        # Convert cookies to dictionaries.
-        serialized_cookies = [serialize_cookie(cookie) for cookie in cookies_list]
-        output_dir = os.path.dirname(output_file)
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir, exist_ok=True)
-            logging.info("Created output directory: %s", output_dir)
-        with open(output_file, "w") as f:
-            json.dump(serialized_cookies, f, indent=4)
-        logging.info(
-            "Cookies successfully extracted and saved to '%s' (found %d cookies).",
-            output_file,
-            len(serialized_cookies),
-        )
-    except Exception as e:
-        logging.error("Failed to write cookies: %s", e)
-
-
 def main():
     # 1) Wait for the initial page to load.
     initial_wait = 5
@@ -207,7 +184,9 @@ def main():
     time.sleep(initial_wait)
 
     # 2) Check for the main Cloudflare challenge template.
-    challenge_template = "/cloudflareopencv/images/cloudflare_verify_click_template_light.png"
+    challenge_template = (
+        "/cloudflareopencv/images/cloudflare_verify_click_template_light.png"
+    )
     coords = find_template_coords(challenge_template, threshold=0.7)
     if coords:
         x, y = coords
@@ -221,9 +200,6 @@ def main():
         logging.info(
             "Cloudflare verification template was not detected; no click action taken."
         )
-
-    # 3) Extract cookies (polling until non-empty).
-    extract_cookies()
 
 
 if __name__ == "__main__":

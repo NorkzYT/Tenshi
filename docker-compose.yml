@@ -12,6 +12,8 @@ services:
     ports:
       # FastAPI
       - "6081:8000"
+      # Browser remote debugging port  
+      - "6082:9222"
       # DEBUG Purposes:
       # - "6080:6080" # noVNC HTML5 interface (access via browser)—noVNC Connection endpoint http://<IPv4>:6080/vnc.html
       # - "5900:5900" # raw VNC (optional)

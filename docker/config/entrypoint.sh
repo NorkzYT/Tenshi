@@ -3,9 +3,7 @@
 # entrypoint.sh
 #
 # This script sets up the user DBus session bus, Xvfb, and then
-# launches Brave Browser with a maximized window using additional
-# flags required to bypass sandbox restrictions in Docker.
-#
+# launches Brave Browser with a maximized window and remote debugging.
 # It also starts VNC services and the FastAPI server.
 # -------------------------------------------------------------
 
@@ -35,15 +33,19 @@ if ! pgrep -x "Xvfb" >/dev/null; then
     sleep 2
 fi
 
-# Launch Brave Browser with a maximized window and additional flags.
+# Launch Brave Browser on port 9223 for remote debugging.
 TARGET_URL=${TARGET_URL:-"about:blank"}
 echo "Launching Brave Browser maximized with URL: $TARGET_URL"
-brave-browser --start-maximized --no-sandbox --disable-setuid-sandbox --disable-gpu --no-first-run "$TARGET_URL" &
+brave-browser --enable-unsafe-swiftshader --no-sandbox --disable-setuid-sandbox --disable-gpu --no-first-run --remote-debugging-port=9223 "$TARGET_URL" &
 
-# Allow some time for Brave to initialize.
+# Wait a few seconds to ensure Brave is fully started.
 sleep 5
 
-# --- Start VNC server for display sharing with password ---
+# Start socat to forward port 9222 (all interfaces) to Brave on 127.0.0.1:9223.
+echo "Starting socat to forward port 9222 from 0.0.0.0 to 127.0.0.1:9223"
+socat TCP4-LISTEN:9222,fork TCP4:127.0.0.1:9223 &
+
+# Continue with the remainder of your startup (VNC, noVNC, FastAPI, etc.)
 if [ -z "$VNC_PASSWORD" ]; then
     echo "VNC_PASSWORD environment variable not set. Exiting for security reasons."
     exit 1
@@ -58,7 +60,6 @@ x11vnc -display $DISPLAY -forever -rfbauth /tmp/vnc_pass -listen 0.0.0.0 -xkb &
 echo "Starting noVNC (websockify)..."
 websockify --web=/usr/share/novnc 6080 localhost:5900 &
 
-# --- Start FastAPI server for Cloudflare automation trigger ---
 echo "Starting FastAPI server..."
 python3 /cloudflareopencv/scripts/fastapi_server.py &
 

@@ -14,8 +14,7 @@ ENV USER=cloudflareopencv
 
 # -------------------------------------------------------------
 # Install OS-level dependencies.
-RUN apt-get update && \
-    apt-get install -y \
+RUN apt-get update && apt-get install -y \
       sudo \
       curl \
       gnupg2 \
@@ -27,8 +26,10 @@ RUN apt-get update && \
       dbus-x11 \
       python3-pip \
       x11-xserver-utils \
-      apt-transport-https && \
-    rm -rf /var/lib/apt/lists/*
+      apt-transport-https \
+      socat \
+      imagemagick \
+    && rm -rf /var/lib/apt/lists/*
 
 # -------------------------------------------------------------
 # Install Brave Browser via its official APT repository.
@@ -83,12 +84,27 @@ RUN apt-get update && apt-get install -y x11vnc novnc websockify && \
     rm -rf /var/lib/apt/lists/*
 
 # Expose ports for VNC (5900) and noVNC (6080)
-EXPOSE 5900 6080
+EXPOSE 5900 6080 
 
 # Create a user-owned runtime directory for DBus and other services.
 RUN mkdir -p /home/cloudflareopencv/runtime && chmod 700 /home/cloudflareopencv/runtime
 # Set XDG_RUNTIME_DIR to this new directory.
 ENV XDG_RUNTIME_DIR=/home/cloudflareopencv/runtime
+
+# --- Install Node.js (v18) and npm ---
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+apt-get install -y nodejs
+
+# --- Copy TypeScript configuration and package manifest ---
+# Copy tsconfig.json and package.json from your repository into the image.
+# Adjust the source paths if your files live elsewhere.
+COPY package.json /cloudflareopencv/package.json
+COPY tsconfig.json /cloudflareopencv/tsconfig.json
+
+# --- Install package.json dependencies only ---
+# Switch to the directory where the TypeScript configuration is stored.
+WORKDIR /cloudflareopencv
+RUN npm install
 
 # Set the container working directory.
 WORKDIR /home/cloudflareopencv
