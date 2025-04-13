@@ -119,18 +119,37 @@ async def get_image(
         description="Chapter folder name (e.g., 'chapter_2') from /cloudflareopencv/data/",
     ),
     filename: str = Query(
-        ..., description="Filename of the image (e.g., 'page_001.jpg')"
+        None,
+        description="(Optional) Filename of the image (e.g., 'page_001.jpg'). If omitted, returns all image filenames in the chapter.",
     ),
 ):
-    # Build the absolute file path.
-    image_path = os.path.join("/cloudflareopencv/data", chapter, filename)
+    # Build the absolute chapter folder path.
+    chapter_path = os.path.join("/cloudflareopencv/data", chapter)
+    if not os.path.isdir(chapter_path):
+        raise HTTPException(status_code=404, detail="Chapter folder not found")
 
-    # Check if the file exists.
-    if not os.path.isfile(image_path):
-        raise HTTPException(status_code=404, detail="Image not found")
-
-    # Return the image file as response.
-    return FileResponse(image_path, media_type="image/jpeg")
+    if filename:
+        # Build the absolute image path.
+        image_path = os.path.join(chapter_path, filename)
+        # Check if the file exists.
+        if not os.path.isfile(image_path):
+            raise HTTPException(status_code=404, detail="Image not found")
+        # Return the image file as a response.
+        return FileResponse(image_path, media_type="image/jpeg")
+    else:
+        # List all image files in the chapter folder (filtering common image extensions).
+        try:
+            files = os.listdir(chapter_path)
+            images = [
+                f
+                for f in files
+                if f.lower().endswith((".jpg", ".jpeg", ".png", ".gif"))
+            ]
+            return {"chapter": chapter, "images": images}
+        except Exception as e:
+            raise HTTPException(
+                status_code=500, detail=f"Error reading chapter folder: {e}"
+            )
 
 
 def update_browser_url(target_url: str):
@@ -154,26 +173,26 @@ def update_browser_url(target_url: str):
             logging.warning("Window activation failed with exit code %d.", ret)
         time.sleep(0.5)
 
-        # Focus the address bar.
+        # Focus the address bar with Ctrl+L.
         logging.info("Focusing browser address bar (Ctrl+L)...")
-        subprocess.check_call(["xdotool", "key", "ctrl+l"])
+        subprocess.check_call(["xdotool", "key", "--delay", "10", "ctrl+l"])
         time.sleep(0.5)
 
-        # Clear existing text in the address bar.
+        # Clear existing text in the address bar using Ctrl+A and BackSpace.
         logging.info("Clearing existing text with Ctrl+A and BackSpace...")
-        subprocess.check_call(["xdotool", "key", "ctrl+a"])
+        subprocess.check_call(["xdotool", "key", "--delay", "10", "ctrl+a"])
         time.sleep(0.1)
-        subprocess.check_call(["xdotool", "key", "BackSpace"])
+        subprocess.check_call(["xdotool", "key", "--delay", "10", "BackSpace"])
         time.sleep(0.5)
 
         # Type the new URL.
         logging.info("Typing URL: %s", target_url)
-        subprocess.check_call(["xdotool", "type", target_url])
+        subprocess.check_call(["xdotool", "type", "--delay", "10", target_url])
         time.sleep(0.5)
 
         # Simulate pressing Enter.
         logging.info("Simulating Enter key...")
-        subprocess.check_call(["xdotool", "key", "Return"])
+        subprocess.check_call(["xdotool", "key", "--delay", "10", "Return"])
     except Exception as e:
         logging.error("Error updating browser URL: %s", e)
         raise
