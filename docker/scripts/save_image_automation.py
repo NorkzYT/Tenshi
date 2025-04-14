@@ -17,6 +17,7 @@ import subprocess
 import sys
 import time
 import os
+import re
 from urllib.parse import urlparse
 
 
@@ -68,6 +69,20 @@ def scroll_to_bottom():
         time.sleep(0.5)
 
 
+def extract_chapter_folder(chapter_url):
+    """
+    Extracts the chapter folder name from the chapter_url.
+    It looks for a path segment that starts with "chapter" (case-insensitive).
+    If not found, returns "default_chapter".
+    """
+    parsed = urlparse(chapter_url)
+    segments = parsed.path.rstrip("/").split("/")
+    for segment in segments:
+        if re.match(r"(?i)^chapter", segment):
+            return segment
+    return "default_chapter"
+
+
 def save_image_sequence(chapter_url, image_url):
     """
     Executes the sequence for saving an image:
@@ -80,9 +95,10 @@ def save_image_sequence(chapter_url, image_url):
       7. Confirm save and navigate back.
     """
     # Extract chapter folder from chapter_url.
-    chapter_folder = os.path.basename(urlparse(chapter_url).path.rstrip("/"))
-    if not chapter_folder:
-        chapter_folder = "default_chapter"
+    chapter_folder = extract_chapter_folder(chapter_url)
+    # Ensure chapter_folder ends with a "/" as required.
+    if not chapter_folder.endswith("/"):
+        chapter_folder += "/"
     target_dir = os.path.join("/cloudflareopencv/data", chapter_folder)
 
     # Create the chapter folder if it doesn't exist.

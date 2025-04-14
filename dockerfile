@@ -91,21 +91,6 @@ RUN mkdir -p /home/cloudflareopencv/runtime && chmod 700 /home/cloudflareopencv/
 # Set XDG_RUNTIME_DIR to this new directory.
 ENV XDG_RUNTIME_DIR=/home/cloudflareopencv/runtime
 
-# --- Install Node.js (v18) and npm ---
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
-apt-get install -y nodejs
-
-# --- Copy TypeScript configuration and package manifest ---
-# Copy tsconfig.json and package.json from your repository into the image.
-# Adjust the source paths if your files live elsewhere.
-COPY package.json /cloudflareopencv/package.json
-COPY tsconfig.json /cloudflareopencv/tsconfig.json
-
-# --- Install package.json dependencies only ---
-# Switch to the directory where the TypeScript configuration is stored.
-WORKDIR /cloudflareopencv
-RUN npm install
-
 # Set the container working directory.
 WORKDIR /home/cloudflareopencv
 
