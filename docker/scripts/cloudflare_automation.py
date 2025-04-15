@@ -8,7 +8,7 @@ Steps:
 3. Check for the main Cloudflare challenge template (cloudflare_verify_click_template_light.png)
    and, if found, simulate a click.
 4. Wait for any redirect to finish.
-5. Poll for cookies from Brave until available, then save them to /cloudflareopencv/data/cloudflare_cookies.json.
+5. Poll for cookies from Brave until available, then save them to /tenshi/data/cloudflare_cookies.json.
 6. When DEBUG_OPENCV is set, intermediate screenshots are saved.
 """
 
@@ -31,7 +31,7 @@ if os.environ.get("DEBUG_OPENCV", "0") == "1":
     logging.info("DEBUG_OPENCV is enabled: Saving screenshots for debugging.")
 
 
-def take_screenshot(debug_dir="/cloudflareopencv/data/screenshots"):
+def take_screenshot(debug_dir="/tenshi/data/screenshots"):
     """Capture a screenshot and save it if debugging is enabled."""
     logging.info("Taking a screenshot of the current screen...")
     screen = np.array(ImageGrab.grab())
@@ -185,7 +185,7 @@ def main():
 
     # 2) Check for the main Cloudflare challenge template.
     challenge_template = (
-        "/cloudflareopencv/images/cloudflare_verify_click_template_light.png"
+        "/tenshi/images/cloudflare_verify_click_template_light.png"
     )
     coords = find_template_coords(challenge_template, threshold=0.7)
     if coords:

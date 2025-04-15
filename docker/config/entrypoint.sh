@@ -61,7 +61,7 @@ echo "Starting noVNC (websockify)..."
 websockify --web=/usr/share/novnc 6080 localhost:5900 &
 
 echo "Starting FastAPI server..."
-python3 /cloudflareopencv/scripts/fastapi_server.py &
+python3 /tenshi/scripts/fastapi_server.py &
 
 # Keep the container running.
 tail -f /dev/null

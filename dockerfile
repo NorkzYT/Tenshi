@@ -5,12 +5,13 @@ LABEL maintainer="Richard Lora <richard@pcscorp.dev>"
 ENV DEBIAN_FRONTEND=noninteractive
 
 # -------------------------------------------------------------
-# Create a non-root user 'cloudflareopencv' for running the automation.
-RUN useradd -m -s /bin/bash cloudflareopencv && \
-    echo "cloudflareopencv:password" | chpasswd && \
-    chown -R cloudflareopencv:cloudflareopencv /home/cloudflareopencv
+# Create a non-root user 'tenshi' for running the automation.
+ARG PASSWORD
+RUN useradd -m -s /bin/bash tenshi && \
+    echo "tenshi:${PASSWORD}" | chpasswd && \
+    chown -R tenshi:tenshi /home/tenshi
 
-ENV USER=cloudflareopencv
+ENV USER=tenshi
 
 # -------------------------------------------------------------
 # Install OS-level dependencies.
@@ -49,16 +50,16 @@ RUN pip3 install --upgrade pip && \
 
 # -------------------------------------------------------------
 # Copy repository files into the container.
-COPY docker/config/entrypoint.sh /cloudflareopencv/config/entrypoint.sh
-COPY docker/config/cloudflare_start.sh /cloudflareopencv/config/cloudflare_start.sh
-COPY docker/scripts /cloudflareopencv/scripts
-COPY docker/images /cloudflareopencv/images
+COPY docker/config/entrypoint.sh /tenshi/config/entrypoint.sh
+COPY docker/config/cloudflare_start.sh /tenshi/config/cloudflare_start.sh
+COPY docker/scripts /tenshi/scripts
+COPY docker/images /tenshi/images
 
 # Set execution permissions on shell and Python scripts.
-RUN chmod +x /cloudflareopencv/config/entrypoint.sh && \
-    chmod +x /cloudflareopencv/config/cloudflare_start.sh && \
-    find /cloudflareopencv/scripts -type f -name "*.sh" -exec chmod +x {} \; && \
-    find /cloudflareopencv/scripts -type f -name "*.py" -exec chmod +x {} \;
+RUN chmod +x /tenshi/config/entrypoint.sh && \
+    chmod +x /tenshi/config/cloudflare_start.sh && \
+    find /tenshi/scripts -type f -name "*.sh" -exec chmod +x {} \; && \
+    find /tenshi/scripts -type f -name "*.py" -exec chmod +x {} \;
 
 # -------------------------------------------------------------
 # Setup additional dependencies: DBus and pulseaudio.
@@ -71,9 +72,9 @@ RUN apt-get update && apt-get install -y pulseaudio && \
 RUN mkdir -p /run/user/1000 && chmod 700 /run/user/1000
 ENV XDG_RUNTIME_DIR=/run/user/1000
 
-# After installing dependencies and before switching to USER cloudflareopencv:
-RUN mkdir -p /cloudflareopencv/data && chown -R cloudflareopencv:cloudflareopencv /cloudflareopencv/data
-RUN mkdir -p /cloudflareopencv/data/screenshots && chown -R cloudflareopencv:cloudflareopencv /cloudflareopencv/data
+# After installing dependencies and before switching to USER tenshi:
+RUN mkdir -p /tenshi/data && chown -R tenshi:tenshi /tenshi/data
+RUN mkdir -p /tenshi/data/screenshots && chown -R tenshi:tenshi /tenshi/data
 
 # Create the X11 socket directory with proper permissions (as root)
 RUN mkdir -p /tmp/.X11-unix && chmod 1777 /tmp/.X11-unix
@@ -87,13 +88,13 @@ RUN apt-get update && apt-get install -y x11vnc novnc websockify && \
 EXPOSE 5900 6080 
 
 # Create a user-owned runtime directory for DBus and other services.
-RUN mkdir -p /home/cloudflareopencv/runtime && chmod 700 /home/cloudflareopencv/runtime
+RUN mkdir -p /home/tenshi/runtime && chmod 700 /home/tenshi/runtime
 # Set XDG_RUNTIME_DIR to this new directory.
-ENV XDG_RUNTIME_DIR=/home/cloudflareopencv/runtime
+ENV XDG_RUNTIME_DIR=/home/tenshi/runtime
 
 # Set the container working directory.
-WORKDIR /home/cloudflareopencv
+WORKDIR /home/tenshi
 
 # -------------------------------------------------------------
 # Set the container entrypoint.
-ENTRYPOINT ["/cloudflareopencv/config/entrypoint.sh"]
+ENTRYPOINT ["/tenshi/config/entrypoint.sh"]

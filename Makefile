@@ -17,7 +17,7 @@
 # Variable Definitions
 # ---------------------------
 DOCKER_USERNAME ?= norkz
-APPLICATION_NAME ?= CloudflareOpenCV
+APPLICATION_NAME ?= tenshi
 GIT_HASH ?= $(shell git log --format="%h" -n 1)
 COMPOSE_FILE_PROD := docker-compose.yml
 COMPOSE_FILE_DEV  := docker-compose.dev.yml

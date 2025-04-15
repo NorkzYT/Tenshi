@@ -54,7 +54,7 @@ async def trigger_automation(
         logging.info("Starting Cloudflare automation synchronously...")
         # Use check_output to wait for cloudflare_start.sh to finish.
         automationCmd = [
-            "/cloudflareopencv/config/cloudflare_start.sh",
+            "/tenshi/config/cloudflare_start.sh",
             url,
             wait,
             str(sleep),
@@ -95,7 +95,7 @@ async def save_image(
         subprocess.check_output(
             [
                 "python3",
-                "/cloudflareopencv/scripts/save_image_automation.py",
+                "/tenshi/scripts/save_image_automation.py",
                 chapter_url,
                 image_url,
             ],
@@ -116,7 +116,7 @@ async def save_image(
 async def get_image(
     chapter: str = Query(
         ...,
-        description="Chapter folder name (e.g., 'chapter_2') from /cloudflareopencv/data/",
+        description="Chapter folder name (e.g., 'chapter_2') from /tenshi/data/",
     ),
     filename: str = Query(
         None,
@@ -124,7 +124,7 @@ async def get_image(
     ),
 ):
     # Build the absolute chapter folder path.
-    chapter_path = os.path.join("/cloudflareopencv/data", chapter)
+    chapter_path = os.path.join("/tenshi/data", chapter)
     if not os.path.isdir(chapter_path):
         raise HTTPException(status_code=404, detail="Chapter folder not found")
 

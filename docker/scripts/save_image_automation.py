@@ -99,7 +99,7 @@ def save_image_sequence(chapter_url, image_url):
     # Ensure chapter_folder ends with a "/" as required.
     if not chapter_folder.endswith("/"):
         chapter_folder += "/"
-    target_dir = os.path.join("/cloudflareopencv/data", chapter_folder)
+    target_dir = os.path.join("/tenshi/data", chapter_folder)
 
     # Create the chapter folder if it doesn't exist.
     os.makedirs(target_dir, exist_ok=True)
@@ -121,7 +121,7 @@ def save_image_sequence(chapter_url, image_url):
     time.sleep(1)
 
     # Step 3: Run Cloudflare automation.
-    run_cmd(["python3", "/cloudflareopencv/scripts/cloudflare_automation.py"])
+    run_cmd(["python3", "/tenshi/scripts/cloudflare_automation.py"])
     time.sleep(2)
 
     # Step 4: Navigate to the image URL.

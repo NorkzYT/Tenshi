@@ -8,7 +8,7 @@
 # -------------------------------------------------------------
 
 echo "Launching Cloudflare Automation Script..."
-python3 /cloudflareopencv/scripts/cloudflare_automation.py
+python3 /tenshi/scripts/cloudflare_automation.py
 
 # Wait a moment after Cloudflare verification and cookie extraction.
 echo "Waiting 5 seconds for page stabilization post-verification..."

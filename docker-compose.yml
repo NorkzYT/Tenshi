@@ -1,14 +1,11 @@
 services:
-  cloudflareopencv:
-    image: norkz/cloudflareopencv:1.0.0
-    container_name: cloudflareopencv
-    hostname: cloudflareopencv
+  tenshi:
+    image: norkz/tenshi:1.0.0
+    container_name: tenshi
+    hostname: tenshi
     environment:
-      - USER=${CLOUDFLARE_OPENCV_USER:?error}
-      - PASSWORD=${CLOUDFLARE_OPENCV_PASSWORD:?error}
-      - GID=${CLOUDFLARE_OPENCV_GID:?error}
-      - UID=${CLOUDFLARE_OPENCV_UID:?error}
-      - VNC_PASSWORD=${CLOUDFLARE_OPENCV_VNC_PASSWORD:?error}
+      - PASSWORD=${TENSHI_PASSWORD:?error}
+      - VNC_PASSWORD=${TENSHI_VNC_PASSWORD:?error}
     ports:
       # FastAPI
       - "6081:8000"
@@ -20,7 +17,7 @@ services:
     volumes:
       - /dev/shm:/dev/shm # Shared memory
       - /run/dbus/system_bus_socket:/host/run/dbus/system_bus_socket
-      - /opt/appdata/cloudflareopencv/data:/cloudflareopencv/data # Data Output
+      - /opt/appdata/tenshi/data:/tenshi/data # Data Output
     cap_add:
       - SYS_PTRACE
     restart: on-failure

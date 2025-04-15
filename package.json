@@ -1,6 +1,6 @@
 {
-	"name": "cloudflareopencv",
-	"description": "A tool for automating Cloudflare Turnstile challenge bypass via full-browser automation, computer vision-based element detection and cookie extraction.",
+	"name": "tenshi",
+	"description": "Fast, robust, and flexible automation tool for bypassing Cloudflare challenges using computer vision (OpenCV) and browser automation.",
 	"version": "1.0.0",
 	"author": "NorkzYT",
 	"private": false,
@@ -8,7 +8,6 @@
 		"clean:install": "rm -rf node_modules/ && rm -rf bun.lockb && bun i",
 		"prettier:check": "prettier --check .",
 		"prettier:format": "prettier --write .",
-		"repoTree": "python3 repoTree.py",
 		"preinstall": "husky install"
 	},
 	"husky": {
