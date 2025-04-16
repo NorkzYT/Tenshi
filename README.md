@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/NorkzYT/Tenshi/main/docs/assets/img/tenshi-cover-rl.png" width="490" alt="Tenshi">
+  <img src="https://raw.githubusercontent.com/NorkzYT/Tenshi/main/docs/content/assets/img/tenshi-cover-rl.png" width="490" alt="Tenshi">
 </p>
 
 <p align="center">
@@ -35,7 +35,7 @@
 
 ## 🔍 Overview
 
-Tenshi is a modular automation tool designed to bypass Cloudflare Turnstile anti-bot measures. It leverages computer vision (via OpenCV) and browser automation to navigate through Cloudflare challenges seamlessly.
+Tenshi is a modular automation tool designed to bypass Cloudflare Turnstile anti-bot measures. It leverages computer vision (via OpenCV) and browser automation to navigate through Cloudflare Turnstile challenge seamlessly.
 
 ## 🌐 Supported Environments
 
@@ -89,11 +89,12 @@ Tenshi exposes a FastAPI server with several endpoints:
 
 ### Remote Debugging Integration
 
-Tenshi is built to work with a remote debugging–enabled Brave browser. In Docker, Brave is launched with remote debugging (internally on port 9223, forwarded to 6082). This enables you to connect your preferred browser automation tools (for example, Chromedp, Puppeteer, or Playwright) to control browser actions programmatically. The included [`tenshin_toongod_demo`](./example/tenshin_toongod_demo.go) demonstrates how to:
+Tenshi is built to work with a remote debugging–enabled Brave browser. In Docker, Brave is launched with remote debugging (internally on port 9223, forwarded to 6082). This enables you to connect your preferred browser automation tools (for example, Chromedp, Puppeteer, or Playwright) to control browser actions programmatically. The included [`toongod_scrape_demo.go`](./example/toongod_scrape_demo.go) demonstrates how to:
 
 - Connect to the remote debugging endpoint (e.g. `http://<your-ip>:6082`)
 - Navigate pages and extract content
 - Trigger Cloudflare bypass actions via the FastAPI endpoints
+- 
 
 ### Automation Capabilities
 
