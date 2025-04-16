@@ -2,6 +2,8 @@ services:
   tenshi:
     build:
       context: .
+      args:
+        PASSWORD: ${TENSHI_PASSWORD:?error}
     container_name: tenshi
     hostname: tenshi
     environment:

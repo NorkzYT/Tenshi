@@ -33,19 +33,46 @@ if ! pgrep -x "Xvfb" >/dev/null; then
     sleep 2
 fi
 
-# Launch Brave Browser on port 9223 for remote debugging.
+# --- Custom Brave Browser Configuration ---
+
+# Define custom user data directory for Brave.
+CUSTOM_USER_DATA="/tenshi/BraveData"
+
+# Create the custom user data directory and the default profile folder.
+mkdir -p "$CUSTOM_USER_DATA/Default"
+
+# Set the path for the Brave Preferences file.
+PREF_FILE="$CUSTOM_USER_DATA/Default/Preferences"
+
+# If the Preferences file does not exist, create it with the desired setting.
+if [ ! -f "$PREF_FILE" ]; then
+    echo "Creating Preferences file with custom download directory..."
+    cat <<EOF >"$PREF_FILE"
+{
+  "download": {
+    "default_directory": "/tenshi"
+  }
+}
+EOF
+else
+    # If the file exists, update the download default_directory using jq.
+    echo "Updating existing Preferences file to set download.default_directory to /tenshi..."
+    tmp_file=$(mktemp)
+    jq '.download.default_directory="/tenshi"' "$PREF_FILE" >"$tmp_file" && mv "$tmp_file" "$PREF_FILE"
+fi
+
+# --- Launch Brave Browser with the custom user data directory ---
 TARGET_URL=${TARGET_URL:-"about:blank"}
-echo "Launching Brave Browser maximized with URL: $TARGET_URL"
-brave-browser --enable-unsafe-swiftshader --no-sandbox --disable-setuid-sandbox --disable-gpu --no-first-run --remote-debugging-port=9223 "$TARGET_URL" &
+echo "Launching Brave Browser with custom user-data directory and URL: $TARGET_URL"
+brave-browser --user-data-dir="$CUSTOM_USER_DATA" \
+    --enable-unsafe-swiftshader --no-sandbox --disable-setuid-sandbox \
+    --disable-gpu --no-first-run --remote-debugging-port=9223 "$TARGET_URL" &
 
-# Wait a few seconds to ensure Brave is fully started.
-sleep 5
-
-# Start socat to forward port 9222 (all interfaces) to Brave on 127.0.0.1:9223.
+# Start socat to forward port 9222 from all interfaces to Brave on 127.0.0.1:9223.
 echo "Starting socat to forward port 9222 from 0.0.0.0 to 127.0.0.1:9223"
 socat TCP4-LISTEN:9222,fork TCP4:127.0.0.1:9223 &
 
-# Continue with the remainder of your startup (VNC, noVNC, FastAPI, etc.)
+# Continue with the remaining startup steps (VNC, noVNC, FastAPI, etc.).
 if [ -z "$VNC_PASSWORD" ]; then
     echo "VNC_PASSWORD environment variable not set. Exiting for security reasons."
     exit 1

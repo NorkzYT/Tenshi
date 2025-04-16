@@ -29,10 +29,6 @@
   </a>
 </div>
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/NorkzYT/Tenshi/main/docs/assets/img/demo.gif" alt="Demo Animation">
-</p>
-
 ## 🔍 Overview
 
 Tenshi is a modular automation tool designed to bypass Cloudflare Turnstile anti-bot measures. It leverages computer vision (via OpenCV) and browser automation to navigate through Cloudflare Turnstile challenge seamlessly.
@@ -94,7 +90,7 @@ Tenshi is built to work with a remote debugging–enabled Brave browser. In Dock
 - Connect to the remote debugging endpoint (e.g. `http://<your-ip>:6082`)
 - Navigate pages and extract content
 - Trigger Cloudflare bypass actions via the FastAPI endpoints
-- 
+-
 
 ### Automation Capabilities
 
