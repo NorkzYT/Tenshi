@@ -10,37 +10,23 @@ ARG PASSWORD
 RUN useradd -m -s /bin/bash tenshi && \
     echo "tenshi:${PASSWORD}" | chpasswd && \
     chown -R tenshi:tenshi /home/tenshi
-
 ENV USER=tenshi
 
 # -------------------------------------------------------------
-# Install OS-level dependencies.
+# Install OS-level dependencies and Brave Browser.
 RUN apt-get update && apt-get install -y \
-      sudo \
-      curl \
-      gnupg2 \
-      lsb-release \
-      xdotool \
-      xvfb \
-      python3-opencv \
-      scrot \
-      dbus-x11 \
-      python3-pip \
-      x11-xserver-utils \
-      apt-transport-https \
-      socat \
-      imagemagick \
-      jq \
-    && rm -rf /var/lib/apt/lists/*
-
-# -------------------------------------------------------------
-# Install Brave Browser via its official APT repository.
-RUN curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg \
+      sudo curl gnupg2 lsb-release xdotool xvfb python3-opencv \
+      scrot dbus-x11 python3-pip x11-xserver-utils apt-transport-https \
+      socat imagemagick jq \
+      x11vnc novnc websockify pulseaudio && \
+    rm -rf /var/lib/apt/lists/* && \
+    \
+    # Install Brave Browser via its official APT repository.
+    curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg \
         https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg && \
     echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg arch=amd64,arm64] https://brave-browser-apt-release.s3.brave.com/ stable main" | \
         tee /etc/apt/sources.list.d/brave-browser-release.list && \
-    apt-get update && \
-    apt-get install -y brave-browser && \
+    apt-get update && apt-get install -y brave-browser && \
     rm -rf /var/lib/apt/lists/*
 
 # -------------------------------------------------------------
@@ -57,45 +43,26 @@ COPY docker/scripts /tenshi/scripts
 COPY docker/images /tenshi/images
 
 # Set execution permissions on shell and Python scripts.
-RUN chmod +x /tenshi/config/entrypoint.sh && \
-    chmod +x /tenshi/config/cloudflare_start.sh && \
-    find /tenshi/scripts -type f -name "*.sh" -exec chmod +x {} \; && \
-    find /tenshi/scripts -type f -name "*.py" -exec chmod +x {} \;
+RUN chmod +x /tenshi/config/entrypoint.sh /tenshi/config/cloudflare_start.sh && \
+    find /tenshi/scripts -type f \( -name "*.sh" -o -name "*.py" \) -exec chmod +x {} \;
 
 # -------------------------------------------------------------
-# Setup additional dependencies: DBus and pulseaudio.
+# Setup additional configurations and directories.
 ENV DBUS_SYSTEM_BUS_ADDRESS=unix:path=/host/run/dbus/system_bus_socket
-RUN apt-get update && apt-get install -y pulseaudio && \
-    mkdir -p /var/run/dbus && \
-    rm -rf /var/lib/apt/lists/*
+RUN mkdir -p /run/user/1000 /tenshi/data/screenshots /tenshi/data && \
+    chown -R tenshi:tenshi /tenshi/data && \
+    mkdir -p /home/tenshi/runtime && chmod 700 /home/tenshi/runtime && \
+    mkdir -p /tmp/.X11-unix && chmod 1777 /tmp/.X11-unix
 
-# Create a secure XDG_RUNTIME_DIR (required by some applications) with 700 permissions.
-RUN mkdir -p /run/user/1000 && chmod 700 /run/user/1000
-ENV XDG_RUNTIME_DIR=/run/user/1000
-
-# After installing dependencies and before switching to USER tenshi:
-RUN mkdir -p /tenshi/data && chown -R tenshi:tenshi /tenshi/data
-RUN mkdir -p /tenshi/data/screenshots && chown -R tenshi:tenshi /tenshi/data
-
-# Create the X11 socket directory with proper permissions (as root)
-RUN mkdir -p /tmp/.X11-unix && chmod 1777 /tmp/.X11-unix
-
-# -------------------------------------------------------------
-# --- Install VNC server and HTML5 frontend packages ---
-RUN apt-get update && apt-get install -y x11vnc novnc websockify && \
-    rm -rf /var/lib/apt/lists/*
-
-# Expose ports for VNC (5900) and noVNC (6080)
-EXPOSE 5900 6080 
-
-# Create a user-owned runtime directory for DBus and other services.
-RUN mkdir -p /home/tenshi/runtime && chmod 700 /home/tenshi/runtime
-# Set XDG_RUNTIME_DIR to this new directory.
 ENV XDG_RUNTIME_DIR=/home/tenshi/runtime
-
-# Set the container working directory.
-WORKDIR /home/tenshi
+# Add our script folder to PYTHONPATH so `import scripts.utils` works
+ENV PYTHONPATH=/tenshi
 
 # -------------------------------------------------------------
-# Set the container entrypoint.
+# Expose ports for VNC and noVNC.
+EXPOSE 5900 6080
+
+# -------------------------------------------------------------
+# Set the working directory and entrypoint.
+WORKDIR /home/tenshi
 ENTRYPOINT ["/tenshi/config/entrypoint.sh"]

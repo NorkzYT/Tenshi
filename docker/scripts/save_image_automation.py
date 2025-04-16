@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 """
-Revised save_image_automation.py
-
-This script automates the process of saving an image by:
-  1. Navigating to a chapter URL.
-  2. Scrolling down to load images.
+Automates saving an image by:
+  1. Navigating to the chapter URL.
+  2. Scrolling to load images.
   3. Running Cloudflare automation.
   4. Navigating to the image URL.
   5. Triggering the Save dialog.
-  6. Inputting the target directory (including chapter folder).
+  6. Inputting the target directory.
   7. Confirming the save.
   8. Navigating back to the chapter page.
+  9. Renaming any files ending with " (1)".
 """
 
 import subprocess
@@ -19,12 +18,17 @@ import time
 import os
 import re
 from urllib.parse import urlparse
+from scripts.utils import wait_for_template
 
 
-def run_cmd(cmd):
-    """Run a shell command and print it (for debugging)."""
+RELOAD_TPL = "/tenshi/images/reload-button-template.png"
+
+
+def run_cmd(cmd, delay=0):
     print(f"Running: {' '.join(cmd)}")
     subprocess.check_call(cmd)
+    if delay:
+        time.sleep(delay)
 
 
 def wait_for(condition_func, timeout=10, poll_interval=0.2):
@@ -38,10 +42,7 @@ def wait_for(condition_func, timeout=10, poll_interval=0.2):
 
 
 def is_chapter_page_loaded(expected_text="Chapter"):
-    """
-    Placeholder function that checks if the chapter page has loaded.
-    For example, you might check that the active window title contains a specific text.
-    """
+    """Check if the current active window title contains expected_text."""
     try:
         window_id = (
             subprocess.check_output(["xdotool", "getactivewindow"])
@@ -56,25 +57,18 @@ def is_chapter_page_loaded(expected_text="Chapter"):
         print(f"Current window title: {title}")
         return expected_text in title
     except Exception as e:
-        print(f"Error while checking chapter page load: {e}")
+        print(f"Error checking chapter page load: {e}")
         return False
 
 
 def scroll_to_bottom():
-    """
-    Scroll to the bottom of the page repeatedly using the End key.
-    """
+    """Scroll to the bottom of the page using the End key repeatedly."""
     for _ in range(5):
-        run_cmd(["xdotool", "key", "--delay", "10", "End"])
-        time.sleep(0.5)
+        run_cmd(["xdotool", "key", "--delay", "10", "End"], delay=0.5)
 
 
 def extract_chapter_folder(chapter_url):
-    """
-    Extracts the chapter folder name from the chapter_url.
-    It looks for a path segment that starts with "chapter" (case-insensitive).
-    If not found, returns "default_chapter".
-    """
+    """Extract the chapter folder name from the chapter URL path."""
     parsed = urlparse(chapter_url)
     segments = parsed.path.rstrip("/").split("/")
     for segment in segments:
@@ -83,67 +77,65 @@ def extract_chapter_folder(chapter_url):
     return "default_chapter"
 
 
+def remove_suffix_one(target_dir):
+    """Rename files ending with ' (1)' before the extension."""
+    for filename in os.listdir(target_dir):
+        pattern = r"^(.*) \(1\)(\.\w+)$"
+        match = re.match(pattern, filename)
+        if match:
+            new_filename = f"{match.group(1)}{match.group(2)}"
+            old_path = os.path.join(target_dir, filename)
+            new_path = os.path.join(target_dir, new_filename)
+            print(f"Renaming {old_path} to {new_path}")
+            try:
+                os.rename(old_path, new_path)
+            except Exception as err:
+                print(f"Failed to rename {old_path}: {err}")
+
+
+def navigate_to_url(url):
+    """Navigates to the given URL using xdotool commands."""
+    run_cmd(["xdotool", "key", "--delay", "10", "ctrl+l"], delay=0.2)
+    run_cmd(["xdotool", "type", "--delay", "10", url], delay=0.2)
+    run_cmd(["xdotool", "key", "--delay", "10", "Return"], delay=2)
+
+
 def save_image_sequence(chapter_url, image_url):
-    """
-    Executes the sequence for saving an image:
-      1. Navigate to the chapter URL.
-      2. Scroll to load images.
-      3. Run Cloudflare automation.
-      4. Switch to the image URL.
-      5. Open and handle the Save dialog.
-      6. Input the target directory with the chapter folder.
-      7. Confirm save and navigate back.
-    """
-    # Extract chapter folder from chapter_url.
+    """Sequence of steps to automate image saving."""
     chapter_folder = extract_chapter_folder(chapter_url)
-    # Ensure chapter_folder ends with a "/" as required.
     if not chapter_folder.endswith("/"):
         chapter_folder += "/"
     target_dir = os.path.join("/tenshi/data", chapter_folder)
-
-    # Create the chapter folder if it doesn't exist.
     os.makedirs(target_dir, exist_ok=True)
-    print(f"Target directory for saving image: {target_dir}")
+    print(f"Target directory: {target_dir}")
 
-    # Step 1: Navigate to the chapter page.
-    run_cmd(["xdotool", "key", "--delay", "10", "ctrl+l"])
-    time.sleep(0.2)
-    run_cmd(["xdotool", "type", "--delay", "10", chapter_url])
-    time.sleep(0.2)
-    run_cmd(["xdotool", "key", "--delay", "10", "Return"])
+    # Navigate to chapter page.
+    navigate_to_url(chapter_url)
 
-    # Wait for the chapter page to load.
     if not wait_for(lambda: is_chapter_page_loaded(expected_text="Chapter"), timeout=5):
-        print("Warning: Chapter page did not load within the timeout.")
+        print("Warning: Chapter page did not load within timeout.")
 
-    # Step 2: Scroll down to load images.
     scroll_to_bottom()
     time.sleep(1)
 
-    # Step 3: Run Cloudflare automation.
-    run_cmd(["python3", "/tenshi/scripts/cloudflare_automation.py"])
-    time.sleep(2)
+    # run Cloudflare automation (internal wait)
+    run_cmd(["python3", "/tenshi/scripts/cloudflare_automation.py"], delay=0)
 
-    # Step 4: Navigate to the image URL.
-    run_cmd(["xdotool", "key", "--delay", "10", "ctrl+l"])
-    time.sleep(0.2)
-    run_cmd(["xdotool", "type", "--delay", "10", image_url])
-    time.sleep(0.2)
-    run_cmd(["xdotool", "key", "--delay", "10", "Return"])
-    time.sleep(2)
+    # navigate to image URL
+    navigate_to_url(image_url)
 
-    # Step 5: Trigger the Save dialog via Ctrl+S.
-    run_cmd(["xdotool", "key", "--delay", "10", "ctrl+s"])
-    time.sleep(1)
+    # wait for reload‑icon before Save
+    wait_for_template(RELOAD_TPL, threshold=0.75, interval=0.5, timeout=20)
 
-    # Step 6: Focus the filename bar and enter target directory with chapter folder.
-    run_cmd(["xdotool", "key", "--delay", "10", "ctrl+l"])
-    time.sleep(0.2)
+    # trigger Save dialog
+    run_cmd(["xdotool", "key", "--delay", "10", "ctrl+s"], delay=1)
+
+    # Focus filename bar and input target directory.
+    run_cmd(["xdotool", "key", "--delay", "10", "ctrl+l"], delay=0.2)
     run_cmd(["xdotool", "key", "--delay", "10", "Left"])
-    run_cmd(["xdotool", "type", "--delay", "10", target_dir])
-    time.sleep(1)
+    run_cmd(["xdotool", "type", "--delay", "10", target_dir], delay=1)
 
-    # Step 7: Confirm the save by sending Enter.
+    # Confirm save.
     window_id = (
         subprocess.check_output(["xdotool", "getwindowfocus"]).strip().decode("utf-8")
     )
@@ -158,23 +150,23 @@ def save_image_sequence(chapter_url, image_url):
             "--window",
             window_id,
             "Return",
-        ]
+        ],
+        delay=2,
     )
-    time.sleep(2)
 
-    # Step 8: Navigate back to the chapter page.
-    run_cmd(["xdotool", "key", "--delay", "10", "Alt+Left"])
-    time.sleep(1)
+    # Navigate back to chapter page.
+    run_cmd(["xdotool", "key", "--delay", "10", "Alt+Left"], delay=1)
+
+    # Post-process: remove suffix "(1)" from files.
+    remove_suffix_one(target_dir)
 
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         print("Usage: save_image_automation.py <chapter_url> <image_url>")
         sys.exit(1)
-    chapter_url = sys.argv[1]
-    image_url = sys.argv[2]
     try:
-        save_image_sequence(chapter_url, image_url)
+        save_image_sequence(sys.argv[1], sys.argv[2])
     except Exception as e:
         print(f"Error during image-saving automation: {e}")
         sys.exit(1)

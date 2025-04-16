@@ -9,19 +9,20 @@ services:
     environment:
       - PASSWORD=${TENSHI_PASSWORD:?error}
       - VNC_PASSWORD=${TENSHI_VNC_PASSWORD:?error}
+      # Optionally uncomment to enable OpenCV debugging:
       # - DEBUG_OPENCV=1
     ports:
       # FastAPI
       - "6081:8000"
-      # Browser remote debugging port  
+      # Browser remote debugging port
       - "6082:9222"
-      # DEBUG Purposes:
-      - "6080:6080" # noVNC HTML5 interface (access via browser)—noVNC Connection endpoint http://<IPv4>:6080/vnc.html
-      - "5900:5900" # raw VNC (optional)
+      # noVNC HTML5 interface and raw VNC (for debugging)
+      - "6080:6080"
+      - "5900:5900"
     volumes:
-      - /dev/shm:/dev/shm # Shared memory
+      - /dev/shm:/dev/shm
       - /run/dbus/system_bus_socket:/host/run/dbus/system_bus_socket
-      - ./docker/data:/tenshi/data # Data Output
+      - ./docker/data:/tenshi/data
     cap_add:
       - SYS_PTRACE
     restart: on-failure

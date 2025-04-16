@@ -2,29 +2,78 @@
 """
 FastAPI Server for Cloudflare Automation Trigger
 
-This server listens for HTTP GET requests on the '/trigger' endpoint with a query parameter `url`.
-Upon receiving a valid URL, it:
-  1. Focuses the Brave browser's address bar via xdotool.
-  2. Types the provided URL and presses Enter.
-  3. Waits briefly for the page to load.
-  4. Triggers the Cloudflare automation by launching a helper shell script.
-
-Example usage:
-    GET /trigger?url=https://example.com
+Listens for HTTP GET requests on endpoints (trigger, save_image, and get_image) to automate browser actions.
 """
-from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import FileResponse
+
 import os
+import re
 import subprocess
 import logging
 import time
 import uvicorn
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.responses import FileResponse
 
-# Create the FastAPI app.
+# Create FastAPI app and configure logging.
 app = FastAPI()
-
-# Configure logging.
 logging.basicConfig(level=logging.INFO)
+
+
+def run_xdotool(args, delay=0):
+    """Wrapper for xdotool command execution with delay support."""
+    logging.info("Executing xdotool command: %s", " ".join(args))
+    try:
+        subprocess.check_call(["xdotool"] + args)
+        if delay:
+            time.sleep(delay)
+    except subprocess.CalledProcessError as e:
+        logging.error("xdotool command failed: %s", e)
+        raise
+
+
+def activate_browser():
+    """Finds the visible Brave browser window and activates it."""
+    window_ids = (
+        subprocess.check_output(
+            ["xdotool", "search", "--onlyvisible", "--class", "Brave-browser"]
+        )
+        .decode()
+        .split()
+    )
+    if not window_ids:
+        raise Exception("No visible Brave browser window found.")
+    window_id = window_ids[0]
+    logging.info("Found Brave window id: %s", window_id)
+    if subprocess.call(["xdotool", "windowactivate", window_id]) != 0:
+        logging.warning("Window activation failed.")
+    time.sleep(0.5)
+    return window_id
+
+
+def focus_address_bar():
+    """Focus the address bar by simulating Ctrl+L and clearing existing text."""
+    logging.info("Focusing and clearing browser address bar...")
+    run_xdotool(["key", "--delay", "10", "ctrl+l"], delay=0.5)
+    run_xdotool(["key", "--delay", "10", "ctrl+a"], delay=0.1)
+    run_xdotool(["key", "--delay", "10", "BackSpace"], delay=0.5)
+
+
+def type_and_submit_url(url: str):
+    """Types the provided URL into the browser and simulates pressing Enter."""
+    logging.info("Typing URL: %s", url)
+    run_xdotool(["type", "--delay", "10", url], delay=0.5)
+    run_xdotool(["key", "--delay", "10", "Return"])
+
+
+def update_browser_url(target_url: str):
+    """High-level function to update the browser's URL with proper focus and typing."""
+    try:
+        activate_browser()
+        focus_address_bar()
+        type_and_submit_url(target_url)
+    except Exception as e:
+        logging.error("Error updating browser URL: %s", e)
+        raise
 
 
 @app.get("/trigger")
@@ -33,7 +82,7 @@ async def trigger_automation(
         ...,
         description="URL to load in the browser (must start with http:// or https://)",
     ),
-    js: str = Query(..., description="JavaScript snippet to execute on the page."),
+    js: str = Query("", description="JavaScript snippet to execute on the page."),
     wait: str = Query("", description="(Optional) CSS selector to wait for."),
     sleep: int = Query(
         5000, description="(Optional) Delay in milliseconds for page stabilization."
@@ -43,17 +92,17 @@ async def trigger_automation(
         raise HTTPException(
             status_code=400, detail="Invalid URL scheme. Must be http or https."
         )
+
     try:
         update_browser_url(url)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Browser update error: {e}")
 
-    # Give the browser a moment to load the URL.
-    time.sleep(5)
+    time.sleep(5)  # Allow the page to load
+
     try:
         logging.info("Starting Cloudflare automation synchronously...")
-        # Use check_output to wait for cloudflare_start.sh to finish.
-        automationCmd = [
+        automation_cmd = [
             "/tenshi/config/cloudflare_start.sh",
             url,
             wait,
@@ -61,11 +110,9 @@ async def trigger_automation(
             js,
         ]
         output = subprocess.check_output(
-            automationCmd, stderr=subprocess.STDOUT, timeout=120
+            automation_cmd, stderr=subprocess.STDOUT, timeout=120
         )
-        logging.info(
-            "Cloudflare automation completed with output:\n%s", output.decode("utf-8")
-        )
+        logging.info("Cloudflare automation output:\n%s", output.decode("utf-8"))
     except subprocess.CalledProcessError as e:
         raise HTTPException(
             status_code=500, detail=f"Automation error: {e.output.decode('utf-8')}"
@@ -73,7 +120,6 @@ async def trigger_automation(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
 
-    # When the automation finishes, return success.
     return {"status": "Triggered", "url": url, "js": js, "wait": wait, "sleep": sleep}
 
 
@@ -115,34 +161,26 @@ async def save_image(
 @app.get("/get_image")
 async def get_image(
     chapter: str = Query(
-        ...,
-        description="Chapter folder name (e.g., 'chapter_2') from /tenshi/data/",
+        ..., description="Chapter folder name (e.g., 'chapter_2') from /tenshi/data/"
     ),
     filename: str = Query(
-        None,
-        description="(Optional) Filename of the image (e.g., 'page_001.jpg'). If omitted, returns all image filenames in the chapter.",
+        None, description="(Optional) Filename of the image (e.g., 'page_001.jpg')."
     ),
 ):
-    # Build the absolute chapter folder path.
     chapter_path = os.path.join("/tenshi/data", chapter)
     if not os.path.isdir(chapter_path):
         raise HTTPException(status_code=404, detail="Chapter folder not found")
 
     if filename:
-        # Build the absolute image path.
         image_path = os.path.join(chapter_path, filename)
-        # Check if the file exists.
         if not os.path.isfile(image_path):
             raise HTTPException(status_code=404, detail="Image not found")
-        # Return the image file as a response.
         return FileResponse(image_path, media_type="image/jpeg")
     else:
-        # List all image files in the chapter folder (filtering common image extensions).
         try:
-            files = os.listdir(chapter_path)
             images = [
                 f
-                for f in files
+                for f in os.listdir(chapter_path)
                 if f.lower().endswith((".jpg", ".jpeg", ".png", ".gif"))
             ]
             return {"chapter": chapter, "images": images}
@@ -150,52 +188,6 @@ async def get_image(
             raise HTTPException(
                 status_code=500, detail=f"Error reading chapter folder: {e}"
             )
-
-
-def update_browser_url(target_url: str):
-    try:
-        # Find the visible Brave browser window.
-        window_ids = (
-            subprocess.check_output(
-                ["xdotool", "search", "--onlyvisible", "--class", "Brave-browser"]
-            )
-            .decode()
-            .split()
-        )
-        if not window_ids:
-            raise Exception("No visible Brave browser window found.")
-        window_id = window_ids[0]
-        logging.info("Found Brave window id: %s", window_id)
-
-        # Activate the browser window.
-        ret = subprocess.call(["xdotool", "windowactivate", window_id])
-        if ret != 0:
-            logging.warning("Window activation failed with exit code %d.", ret)
-        time.sleep(0.5)
-
-        # Focus the address bar with Ctrl+L.
-        logging.info("Focusing browser address bar (Ctrl+L)...")
-        subprocess.check_call(["xdotool", "key", "--delay", "10", "ctrl+l"])
-        time.sleep(0.5)
-
-        # Clear existing text in the address bar using Ctrl+A and BackSpace.
-        logging.info("Clearing existing text with Ctrl+A and BackSpace...")
-        subprocess.check_call(["xdotool", "key", "--delay", "10", "ctrl+a"])
-        time.sleep(0.1)
-        subprocess.check_call(["xdotool", "key", "--delay", "10", "BackSpace"])
-        time.sleep(0.5)
-
-        # Type the new URL.
-        logging.info("Typing URL: %s", target_url)
-        subprocess.check_call(["xdotool", "type", "--delay", "10", target_url])
-        time.sleep(0.5)
-
-        # Simulate pressing Enter.
-        logging.info("Simulating Enter key...")
-        subprocess.check_call(["xdotool", "key", "--delay", "10", "Return"])
-    except Exception as e:
-        logging.error("Error updating browser URL: %s", e)
-        raise
 
 
 if __name__ == "__main__":
