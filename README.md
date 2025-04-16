@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/NorkzYT/Tenshi/main/docs/content/assets/img/tenshi-cover-rl.png" width="490" alt="Tenshi">
+  <img src="https://raw.githubusercontent.com/NorkzYT/Tenshi/refs/heads/main/docs/content/assets/img/tenshi-cover-rl.png" width="490" alt="Tenshi">
 </p>
 
 <p align="center">
