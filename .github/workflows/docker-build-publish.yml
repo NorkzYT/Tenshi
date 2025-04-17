@@ -96,6 +96,8 @@ jobs:
           context: .
           file: ./dockerfile
           platforms: linux/amd64,linux/arm64
+          build-args: |
+            PASSWORD=${{ secrets.TENSHI_PASSWORD }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           push: true
