@@ -48,11 +48,11 @@ jobs:
             type=semver,event=tag,pattern={{version}}
           labels: |
             maintainer=NorkzYT
-            org.opencontainers.image.title=Backuponepass
-            org.opencontainers.image.description=Automatically backup your 1Password Data.
-            org.opencontainers.image.documentation=https://github.com/NorkzYT/BackupOnePass
+            org.opencontainers.image.title=Tenshi
+            org.opencontainers.image.description=Fast, robust, and flexible automation tool for bypassing Cloudflare challenges using computer vision (OpenCV) and browser automation.
+            org.opencontainers.image.documentation=https://github.com/NorkzYT/Tenshi
             org.opencontainers.image.authors=Richard Lora
-            org.opencontainers.image.licenses=GPL-3.0
+            org.opencontainers.image.licenses=MIT
             org.opencontainers.image.version=${{ steps.package-version.outputs.version }}
 
       - name: 🔧 Set up QEMU
