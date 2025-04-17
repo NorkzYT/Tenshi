@@ -10,7 +10,7 @@ services:
       - PASSWORD=${TENSHI_PASSWORD:?error}
       - VNC_PASSWORD=${TENSHI_VNC_PASSWORD:?error}
       # Optionally uncomment to enable OpenCV debugging:
-      # - DEBUG_OPENCV=1
+      # - DEBUG_OPENCV=${DEBUG_OPENCV}
     ports:
       # FastAPI
       - "6081:8000"
