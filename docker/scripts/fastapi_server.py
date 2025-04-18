@@ -158,6 +158,40 @@ async def save_image(
     return {"status": "Saved", "chapter_url": chapter_url, "image_url": image_url}
 
 
+@app.get("/save_chapter")
+async def save_chapter(
+    chapter_url: str = Query(..., description="Chapter URL to fetch & save all images"),
+    js: str = Query(
+        "(function(){"
+        '  var imgs = document.querySelectorAll("div.reading-content img.wp-manga-chapter-img");'
+        "  var srcs = [];"
+        "  for(var i=0;i<imgs.length;i++){"
+        '    var src = imgs[i].getAttribute("src")||imgs[i].getAttribute("data-src");'
+        "    if(src&&src.trim()) srcs.push(src.trim());"
+        "  }"
+        "  return JSON.stringify(srcs);"
+        "})();",
+        description="JavaScript snippet returning a JSON‑stringified array of image URLs",
+    ),
+):
+    try:
+        subprocess.check_output(
+            [
+                "python3",
+                "/tenshi/scripts/save_chapter_automation.py",
+                chapter_url,
+                js,
+            ],
+            stderr=subprocess.STDOUT,
+            timeout=600,
+        )
+    except subprocess.CalledProcessError as e:
+        raise HTTPException(
+            status_code=500, detail=f"Automation error: {e.output.decode()}"
+        )
+    return {"status": "Saved", "chapter_url": chapter_url}
+
+
 @app.get("/get_image")
 async def get_image(
     chapter: str = Query(

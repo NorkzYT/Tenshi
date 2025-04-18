@@ -11,6 +11,8 @@ from PIL import ImageGrab
 
 logger = logging.getLogger(__name__)
 DEBUG_OPENCV = os.environ.get("DEBUG_OPENCV", "0") == "1"
+FASTAPI_BASE = "http://127.0.0.1:8000"
+CDP_ENDPOINT = "http://127.0.0.1:9222"
 
 
 def take_screenshot(debug_dir="/tenshi/data/screenshots"):
