@@ -183,6 +183,18 @@ async def get_image(
                 for f in os.listdir(chapter_path)
                 if f.lower().endswith((".jpg", ".jpeg", ".png", ".gif"))
             ]
+
+            def keyfn(name: str):
+                parts = name.split("-", 3)
+                nums = []
+                for p in parts:
+                    try:
+                        nums.append(int(p))
+                    except ValueError:
+                        nums.append(0)
+                return nums
+
+            images.sort(key=keyfn)
             return {"chapter": chapter, "images": images}
         except Exception as e:
             raise HTTPException(
