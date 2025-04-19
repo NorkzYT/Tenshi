@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 
 import requests
 from playwright.sync_api import sync_playwright
+from scripts.cloudflare_utils import bypass_cf
 from scripts.utils import CDP_ENDPOINT, FASTAPI_BASE
 
 
@@ -14,20 +15,6 @@ def scroll_to_bottom(page, repeats=5, delay=0.3):
     for _ in range(repeats):
         page.keyboard.press("End")
         time.sleep(delay)
-
-
-def bypass_cf(chapter_url: str):
-    try:
-        logging.info("Bypassing CF for chapter %s", chapter_url)
-        resp = requests.get(
-            f"{FASTAPI_BASE}/trigger",
-            params={"url": chapter_url, "js": "", "wait": "", "sleep": 2000},
-            timeout=60,
-        )
-        resp.raise_for_status()
-        logging.info("✅ CF bypass completed for %s", chapter_url)
-    except Exception as e:
-        logging.warning("CF bypass failed: %s", e)
 
 
 def extract_chapter_folder(chapter_url: str) -> str:

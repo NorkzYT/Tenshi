@@ -9,6 +9,7 @@ from urllib.parse import unquote, urlparse
 
 import requests
 from playwright.sync_api import sync_playwright
+from scripts.cloudflare_utils import bypass_cf
 from scripts.utils import CDP_ENDPOINT, FASTAPI_BASE
 
 logging.basicConfig(level=logging.INFO)
@@ -31,15 +32,7 @@ def save_chapter(chapter_url: str, js: str, slug: str):
     os.makedirs(out_dir, exist_ok=True)
 
     # 1) Bypass CF
-    try:
-        resp = requests.get(
-            f"{FASTAPI_BASE}/trigger",
-            params={"url": chapter_url, "sleep": 1000},
-            timeout=60,
-        )
-        resp.raise_for_status()
-    except Exception as e:
-        logger.warning("CF bypass failed: %s", e)
+    bypass_cf(chapter_url)
 
     with sync_playwright() as pw:
         # 2) Connect to the existing browser and create a new page

@@ -14,7 +14,8 @@ import time
 import uvicorn
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse
-from scripts.utils import wait_for_page_load
+from scripts.cloudflare_utils import wait_for_page_load
+from scripts.utils import RELOAD_TPL
 
 # Create FastAPI app and configure logging.
 app = FastAPI()
@@ -73,7 +74,7 @@ def update_browser_url(target_url: str):
         activate_browser()
         focus_address_bar()
         type_and_submit_url(target_url)
-        wait_for_page_load()
+        wait_for_page_load(template_path=RELOAD_TPL)
     except Exception as e:
         logging.error("Error updating browser URL: %s", e)
         raise
