@@ -25,16 +25,16 @@ def extract_folder(chapter_url: str) -> str:
     return unquote(urlparse(chapter_url).path.rstrip("/").split("/")[-1])
 
 
-def save_chapter(chapter_url: str, js: str):
-    folder = extract_folder(chapter_url)
-    out_dir = os.path.join("/tenshi/data", folder)
+def save_chapter(chapter_url: str, js: str, slug: str):
+    folder = unquote(urlparse(chapter_url).path.rstrip("/").split("/")[-1])
+    out_dir = os.path.join("/tenshi/data", slug, folder)
     os.makedirs(out_dir, exist_ok=True)
 
     # 1) Bypass CF
     try:
         resp = requests.get(
             f"{FASTAPI_BASE}/trigger",
-            params={"url": chapter_url, "sleep": 2000},
+            params={"url": chapter_url, "sleep": 1000},
             timeout=60,
         )
         resp.raise_for_status()
@@ -99,11 +99,16 @@ def save_chapter(chapter_url: str, js: str):
                 continue
 
             logger.info("Downloading %s via Playwright APIRequest", fname)
-            resp = api_request.get(src, headers={"Referer": chapter_url})
-            if resp.status != 200:
-                logger.error("Failed to fetch %s: %d", src, resp.status)
+            try:
+                resp = api_request.get(src, headers={"Referer": chapter_url})
+                if resp.status != 200:
+                    logger.error("Failed to fetch %s: status %d", src, resp.status)
+                    continue
+                body = resp.body()
+            except Exception as e:
+                logger.error("Playwright request for %s threw: %s", src, e)
                 continue
-            body = resp.body()
+
             with open(out_path, "wb") as f:
                 f.write(body)
 
@@ -112,10 +117,11 @@ def save_chapter(chapter_url: str, js: str):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("Usage: save_chapter_automation.py <chapter_url> <css_selector>")
+    if len(sys.argv) != 4:
+        print("Usage: save_chapter_automation.py <chapter_url> <js_snippet> <slug>")
         sys.exit(1)
 
     chapter_url = sys.argv[1]
-    selector = sys.argv[2]
-    save_chapter(chapter_url, selector)
+    js = sys.argv[2]
+    slug = sys.argv[3]
+    save_chapter(chapter_url, js, slug)

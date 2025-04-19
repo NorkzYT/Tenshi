@@ -2,9 +2,10 @@
 """
 Tenshi utilities: screenshot capture, template matching, and wait routines.
 """
+import logging
 import os
 import time
-import logging
+
 import cv2
 import numpy as np
 from PIL import ImageGrab
@@ -13,6 +14,7 @@ logger = logging.getLogger(__name__)
 DEBUG_OPENCV = os.environ.get("DEBUG_OPENCV", "0") == "1"
 FASTAPI_BASE = "http://127.0.0.1:8000"
 CDP_ENDPOINT = "http://127.0.0.1:9222"
+RELOAD_TPL = "/tenshi/images/reload-button-template.png"
 
 
 def take_screenshot(debug_dir="/tenshi/data/screenshots"):
@@ -71,3 +73,19 @@ def wait_for_template(template_path, threshold=0.7, interval=0.5, timeout=30.0):
         time.sleep(interval)
     logger.warning("Timeout waiting for %s", template_path)
     return None
+
+
+def wait_for_page_load(timeout: float = 20.0):
+    """
+    Blocks until the CF reload-icon appears (page loaded) or falls back to a fixed sleep.
+    Use this instead of a blind sleep.
+    """
+    logger.info("Waiting for page load via template %s", RELOAD_TPL)
+    coords = wait_for_template(
+        RELOAD_TPL, threshold=0.75, interval=0.5, timeout=timeout
+    )
+    if not coords:
+        logger.info("Reload button never appeared; sleeping fallback…")
+        time.sleep(5)
+    else:
+        logger.info("Page loaded, reload icon at %s", coords)

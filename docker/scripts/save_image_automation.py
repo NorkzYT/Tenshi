@@ -1,13 +1,12 @@
-from playwright.sync_api import sync_playwright
-import time
 import logging
-import requests
+import os
+import sys
+import time
 from urllib.parse import urlparse
-import os, sys
-from scripts.utils import (
-    CDP_ENDPOINT,
-    FASTAPI_BASE,
-)
+
+import requests
+from playwright.sync_api import sync_playwright
+from scripts.utils import CDP_ENDPOINT, FASTAPI_BASE
 
 
 def scroll_to_bottom(page, repeats=5, delay=0.3):
