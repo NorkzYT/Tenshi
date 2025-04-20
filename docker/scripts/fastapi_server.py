@@ -228,23 +228,22 @@ async def get_image(
         return FileResponse(image_path, media_type="image/jpeg")
     else:
         try:
+            # List only image files
             images = [
                 f
                 for f in os.listdir(chapter_path)
                 if f.lower().endswith((".jpg", ".jpeg", ".png", ".gif"))
             ]
 
-            def keyfn(name: str):
-                parts = name.split("-", 3)
-                nums = []
-                for p in parts:
-                    try:
-                        nums.append(int(p))
-                    except ValueError:
-                        nums.append(0)
-                return nums
+            # Sort by the numeric prefix (before the extension)
+            def sort_key(name: str):
+                base, _ = os.path.splitext(name)
+                try:
+                    return int(base)
+                except ValueError:
+                    return base  # fallback to lexicographical
 
-            images.sort(key=keyfn)
+            images.sort(key=sort_key)
             return {"chapter": chapter, "images": images}
         except Exception as e:
             raise HTTPException(
