@@ -228,11 +228,23 @@ async def get_image(
         return FileResponse(image_path, media_type="image/jpeg")
     else:
         try:
-            # List only image files
+            # List all common image file types including modern formats
             images = [
                 f
                 for f in os.listdir(chapter_path)
-                if f.lower().endswith((".jpg", ".jpeg", ".png", ".gif"))
+                if f.lower().endswith(
+                    (
+                        ".jpg",
+                        ".jpeg",
+                        ".png",
+                        ".gif",
+                        ".webp",
+                        ".tiff",
+                        ".tif",
+                        ".avif",
+                        ".heic",
+                    )
+                )
             ]
 
             # Sort by the numeric prefix (before the extension)

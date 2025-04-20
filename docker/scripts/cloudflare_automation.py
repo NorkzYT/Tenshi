@@ -38,7 +38,7 @@ def main():
     # 2) Early detection: check for Cloudflare logo presence
     # Use broader scales and lower threshold to improve detection
     logo_coords = find_template_coords(
-        LOGO_TPL, threshold=0.6, scales=(0.5, 0.75, 1.0, 1.25)
+        LOGO_TPL, threshold=0.2, scales=(0.5, 0.75, 1.0, 1.25)
     )
     if not logo_coords:
         logger.info("No Cloudflare logo detected; skipping challenge bypass.")
