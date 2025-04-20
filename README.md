@@ -17,7 +17,7 @@
   </a>
   <!-- License -->
   <a href="LICENSE" target="_blank">
-    <img src="https://img.shields.io/badge/license-GNUv3-purple" alt="License">
+    <img src="https://img.shields.io/badge/license-MIT-purple" alt="License">
   </a>
   <!-- Contributor Covenant -->
   <a href="https://contributor-covenant.org/version/2/1/code_of_conduct/" target="_blank">
@@ -29,76 +29,150 @@
   </a>
 </div>
 
-## 🔍 Overview
+<details>
+<summary><strong>Expand Table of Contents</strong></summary>
 
-Tenshi is a modular automation tool designed to bypass Cloudflare Turnstile anti-bot measures. It leverages computer vision (via OpenCV) and browser automation to navigate through Cloudflare Turnstile challenge seamlessly.
+- [Overview](#overview)
+- [Features](#features)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Development](#development)
+- [Usage](#usage)
+  - [FastAPI Endpoints](#fastapi-endpoints)
+  - [Docker Compose / CLI](#docker-compose--cli)
+- [Configuration](#configuration)
+- [Directory Layout](#directory-layout)
+- [Contributing](#contributing)
+- [License](#license)
 
-## 🌐 Supported Environments
+</details>
 
-- **Operating Systems**: Linux, macOS, and Windows (via Docker installation)
-- **Browser**: Brave Browser (with remote debugging enabled)
-- **Automation**: Combines xdotool, OpenCV, and FastAPI to control browser behavior
-- **Containerization**: Fully configured Docker environment for both development and production
+## Overview
 
-## 🚀 Installation
+Tenshi automates Cloudflare Turnstile challenges by combining:
 
-### 🐳 Docker
+- **Computer vision** with OpenCV templates
+- **Browser control** via Brave Browser remote debugging
+- **Scripted workflows** driven by FastAPI endpoints
 
-1. Ensure Docker is installed.
-2. Copy `.env.example` to `.env` and set your environment variables.
-3. Build and run the container:
+You can integrate Tenshi into any scraping or automation pipeline to solve Turnstile barriers before driving further interactions.
+
+## Features
+
+- Detects and clicks “Reload” or challenge buttons when Turnstile appears
+- Offers `/trigger`, `/save_chapter`, `/save_image`, `/get_image` HTTP endpoints
+- Ships in a fully configured Docker image for Linux, macOS, and Windows hosts
+- Exposes a remote‑debuggable Brave instance (Chromium via CDP)
+- Supports lazy‑loaded image scraping via Playwright and Python scripts
+
+## Prerequisites
+
+- [Docker Engine](https://docs.docker.com/engine/) ≥ 28.0.2
+- [Docker Compose](https://docs.docker.com/compose/) ≥ v2.34.0
+- A machine with at least 2 GB RAM and 4 CPU Cores
+- Network access to target URLs
+
+## Installation
+
+1. **Clone repository**
+
    ```bash
-   docker compose -f docker-compose.yml up -d --force-recreate
+   git clone https://github.com/NorkzYT/Tenshi.git
+   cd Tenshi
    ```
 
-## 💻 Usage
+2. **Copy and configure environment**
+
+   ```bash
+   cp .env.example .env
+   # Then set:
+   # TENSHI_VNC_PASSWORD  – password for VNC/noVNC access
+   ```
+
+3. **Build and start (production)**
+
+   ```bash
+   make prod
+   ```
+
+4. **Verify services**
+   - FastAPI at `http://localhost:6081`
+   - noVNC at `http://localhost:6080`
+   - VNC on port 5900 (password = TENSHI_VNC_PASSWORD)
+
+## Development
+
+Use the development compose file to bind‑mount scripts and data:
+
+```bash
+docker compose -f docker-compose.dev.yml up --build
+```
+
+- Maps `./docker/data` → `/tenshi/data` for persisted output
+- Forwards Brave CDP port `9222` to host `6082`
+- Enables optional OpenCV debug logging via `DEBUG_OPENCV=1`
+
+## Usage
 
 ### FastAPI Endpoints
 
-Tenshi exposes a FastAPI server with several endpoints:
+All endpoints live under `http://<host>:6081`.
 
-- **Trigger Automation**  
-  **Endpoint:** `/trigger`  
-  **Description:** Loads the target URL in the browser, executes optional JavaScript, and initiates the Cloudflare bypass workflow.  
-  **Example (using curl):**
+| Endpoint        | Method | Description                                                                                |
+| --------------- | ------ | ------------------------------------------------------------------------------------------ |
+| `/trigger`      | GET    | Load URL in browser and run Turnstile bypass.                                              |
+| `/save_chapter` | GET    | Fetch all images from a chapter page, download them into `/tenshi/data/<slug>/<chapter>/`. |
+| `/save_image`   | GET    | Download a single image URL into `/tenshi/data/<chapter>/`.                                |
+| `/get_image`    | GET    | List or retrieve saved images from a chapter folder.                                       |
 
-  ```bash
-  curl "http://localhost:6081/trigger?url=https://example.com&js=&wait=&sleep=5000"
-  ```
+#### Examples
 
-- **Save Image**  
-  **Endpoint:** `/save_image`  
-  **Description:** Navigates to the chapter URL, processes the provided image URL, and invokes the browser save automation.  
-  **Example:**
+```bash
+# 1. Bypass Turnstile on example.com
+curl "http://localhost:6081/trigger?url=https://example.com&sleep=5000"
 
-  ```bash
-  curl "http://localhost:6081/save_image?chapter_url=https://example.com/chapter1&image_url=https://cdn.example.com/image1.jpg"
-  ```
+# 2. Save entire chapter
+curl "http://localhost:6081/save_chapter?chapter_url=https://site.com/chapter-1&slug=my-series"
 
-- **Get Saved Image**  
-  **Endpoint:** `/get_image`  
-  **Description:** Returns a list of saved image filenames for a specified chapter folder or a specific image if a filename is provided.  
-  **Example:**
-  ```bash
-  curl "http://localhost:6081/get_image?chapter=chapter_1"
-  ```
+# 3. Save single image
+curl "http://localhost:6081/save_image?chapter_url=https://site.com/ch1&image_url=https://cdn.site.com/img1.jpg"
 
-### Remote Debugging Integration
+# 4. List saved images
+curl "http://localhost:6081/get_image?slug=my-series&chapter=chapter-1"
+```
 
-Tenshi is built to work with a remote debugging–enabled Brave browser. In Docker, Brave is launched with remote debugging (internally on port 9223, forwarded to 6082). This enables you to connect your preferred browser automation tools (for example, Chromedp, Puppeteer, or Playwright) to control browser actions programmatically. The included [`toongod_scrape_demo.go`](./example/toongod_scrape_demo.go) demonstrates how to:
+### Docker Compose / CLI
 
-- Connect to the remote debugging endpoint (e.g. `http://<your-ip>:6082`)
-- Navigate pages and extract content
-- Trigger Cloudflare bypass actions via the FastAPI endpoints
--
+You can drive Tenshi from your host via Docker Compose:
 
-### Automation Capabilities
+```bash
+# Run once
+docker compose exec tenshi curl "http://127.0.0.1:8000/trigger?url=https://example.com"
+```
 
-After bypassing the Cloudflare Turnstile challenge, Tenshi allows you to further automate your browser. By connecting to the remote debugging port, you can integrate with powerful automation libraries such as Chromedp, Puppeteer, Playwright, and others. This flexibility enables you to build customized scrapers or automation workflows that can interact with the browser directly once the initial bypass is complete.
+## Configuration
+
+| Variable              | Description                                             | Default       |
+| --------------------- | ------------------------------------------------------- | ------------- |
+| `TENSHI_PASSWORD`     | System password for user `tenshi`                       | _required_    |
+| `TENSHI_VNC_PASSWORD` | Password for VNC/noVNC access                           | _required_    |
+| `DEBUG_OPENCV`        | Enable debug screenshots and logs for template matching | `0`           |
+| `TARGET_URL`          | Initial URL Brave opens on container start              | `about:blank` |
+
+| Port | Service                      |
+| ---- | ---------------------------- |
+| 6081 | FastAPI (trigger API)        |
+| 6080 | noVNC HTML5 VNC client       |
+| 5900 | Raw VNC (x11vnc)             |
+| 6082 | Brave remote debugging (CDP) |
 
 ## 🤝 Contribution
 
 Contributions, issues, and pull requests are welcome! Please refer to [CONTRIBUTING.md](CONTRIBUTING.md) for development and contribution guidelines.
+
+## License
+
+This project is licensed under MIT. See [LICENSE](./LICENSE) for details.
 
 ## 📈 Star History
 
