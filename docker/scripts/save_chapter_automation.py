@@ -10,6 +10,7 @@ from urllib.parse import unquote, urlparse
 import requests
 from playwright.sync_api import sync_playwright
 from scripts.cloudflare_utils import bypass_cf
+from scripts.file_utils import filename_for_index
 from scripts.utils import CDP_ENDPOINT, FASTAPI_BASE
 
 logging.basicConfig(level=logging.INFO)
@@ -85,13 +86,17 @@ def save_chapter(chapter_url: str, js: str, slug: str):
 
         # inside your save_chapter_automation.py, after you harvest cookies into `context`:
         api_request = context.request  # this is a built‑in Playwright API for HTTP
-        for src in srcs:
-            fname = os.path.basename(urlparse(src).path)
-            out_path = os.path.join(out_dir, fname)
+
+        # Download images using a zero‑padded counter as filename: 000.jpg, 001.jpg, …
+        for idx, src in enumerate(srcs):
+            filename = filename_for_index(src, idx)
+            out_path = os.path.join(out_dir, filename)
+
+            # skip if already downloaded
             if os.path.exists(out_path):
                 continue
 
-            logger.info("Downloading %s via Playwright APIRequest", fname)
+            logger.info("Downloading %s via Playwright APIRequest", filename)
             try:
                 resp = api_request.get(src, headers={"Referer": chapter_url})
                 if resp.status != 200:
@@ -102,6 +107,7 @@ def save_chapter(chapter_url: str, js: str, slug: str):
                 logger.error("Playwright request for %s threw: %s", src, e)
                 continue
 
+            # write out with zero‑padded name
             with open(out_path, "wb") as f:
                 f.write(body)
 

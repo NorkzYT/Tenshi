@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 import requests
 from playwright.sync_api import sync_playwright
 from scripts.cloudflare_utils import bypass_cf
+from scripts.file_utils import filename_for_index
 from scripts.utils import CDP_ENDPOINT, FASTAPI_BASE
 
 
@@ -28,7 +29,17 @@ def save_image(chapter_url: str, image_url: str):
     chapter = extract_chapter_folder(chapter_url)
     target_dir = os.path.join("/tenshi/data", chapter)
     os.makedirs(target_dir, exist_ok=True)
-    filename = os.path.basename(urlparse(image_url).path)
+
+    # determine next index by counting existing images
+    existing = sorted(
+        [
+            f
+            for f in os.listdir(target_dir)
+            if os.path.splitext(f)[1].lower() in (".jpg", ".jpeg", ".png", ".gif")
+        ]
+    )
+    idx = len(existing)
+    filename = filename_for_index(image_url, idx)
     out_path = os.path.join(target_dir, filename)
 
     bypass_cf(chapter_url)
