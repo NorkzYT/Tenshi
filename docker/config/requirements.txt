@@ -1,6 +1,6 @@
 numpy==2.4.2
 opencv-python==4.13.0.92
-Pillow==11.3.0
+Pillow==12.1.1
 fastapi==0.115.12
 uvicorn==0.34.0
 browser-cookie3==0.20.1
