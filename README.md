@@ -166,6 +166,10 @@ docker compose exec tenshi curl "http://127.0.0.1:8000/trigger?url=https://examp
 | 5900 | Raw VNC (x11vnc)             |
 | 6082 | Brave remote debugging (CDP) |
 
+## Contributors
+
+We're happy to welcome [@Breadfishman](https://github.com/Breadfishman)'s contributions to our work this project. They collaborated closely on the project under our shared account.
+
 ## 🤝 Contribution
 
 Contributions, issues, and pull requests are welcome! Please refer to [CONTRIBUTING.md](CONTRIBUTING.md) for development and contribution guidelines.
