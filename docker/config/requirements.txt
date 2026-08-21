@@ -2,7 +2,7 @@ numpy==2.4.3
 opencv-python==4.13.0.92
 Pillow==11.3.0
 fastapi==0.115.12
-uvicorn==0.34.0
+uvicorn==0.52.4
 browser-cookie3==0.20.1
 requests==2.33.0
 playwright==1.58.0
