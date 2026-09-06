@@ -1,5 +1,5 @@
 numpy==2.4.3
-opencv-python==4.13.0.92
+opencv-python==4.14.0.94
 Pillow==11.3.0
 fastapi==0.115.12
 uvicorn==0.34.0
